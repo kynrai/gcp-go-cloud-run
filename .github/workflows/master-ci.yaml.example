@@ -1,0 +1,54 @@
+name: Build and Deploy to Cloud Run
+
+on: 
+  push:
+    branches:
+      - master
+
+jobs:
+  Test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - uses: actions/setup-go@v1
+      with:
+        go-version: 1.13.4
+    - run: make test
+
+  Build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: Test
+    env:
+      PROJECT_ID: ${{ secrets.PROJECT_ID }}
+      APP_NAME: ${{ secrets.APP_NAME }}
+      APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+    steps:
+    - uses: actions/checkout@v1
+    - name: Build on Cloud build
+      uses: actions-hub/gcloud@master
+      with:
+        args: builds submit --project $PROJECT_ID --tag eu.gcr.io/$PROJECT_ID/$APP_NAME .
+    
+  Deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    needs: Build
+    env:
+      PROJECT_ID: ${{ secrets.PROJECT_ID }}
+      APP_NAME: ${{ secrets.APP_NAME }}
+      APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+    steps:
+    - name: Deploy to Cloud Run
+      uses: actions-hub/gcloud@master
+      with:
+        args: |
+          run deploy $APP_NAME \
+            --image eu.gcr.io/$PROJECT_ID/$APP_NAME \
+            --platform managed \
+            --region europe-west1 \
+            --allow-unauthenticated \
+            --project $PROJECT_ID \
+            --memory 2G \
+            --quiet
