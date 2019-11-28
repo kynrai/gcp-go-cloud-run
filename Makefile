@@ -32,4 +32,4 @@ deploy:
 		--quiet
 
 local:
-	@docker run -ti -p $(PORT):$(PORT) -e PORT=$(PORT) eu.gcr.io/$(GCP_PROJECT)/$(APP_NAME)
+	@docker run --rm -ti -p $(PORT):$(PORT) -e PORT=$(PORT) eu.gcr.io/$(GCP_PROJECT)/$(APP_NAME)
